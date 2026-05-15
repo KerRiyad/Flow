@@ -761,76 +761,15 @@ G('btnRmImg').onclick=clearAttach;
 G('btnAttachImg').addEventListener('click',()=>G('chatImgFI').click());
 G('chatImgFI').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;attachedFile=f;attachedType='image';G('imgPreviewThumb').src=URL.createObjectURL(f);G('attachLabel').textContent='صورة جاهزة للإرسال';G('imgPreviewBar').classList.add('show')});
 
-// VOICE MESSAGE - direct recording
-let mediaRec=null, recChunks=[], recTimer=null, recSeconds=0;
-
-G('btnRecord').addEventListener('click', async ()=>{
-  if(!activeCh||!activeSrv) return toast('اختر قناة أولاً');
-
-  // if already recording → stop and send
-  if(mediaRec && mediaRec.state==='recording'){
-    mediaRec.stop();
-    clearInterval(recTimer);
-    G('btnRecord').style.color='var(--t3)';
-    G('btnRecord').style.background='none';
-    G('attachLabel').textContent='جارٍ معالجة التسجيل...';
-    return;
-  }
-
-  // start recording
-  try{
-    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
-    recChunks=[];recSeconds=0;
-
-    // try different mime types for browser compatibility
-    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-      ? 'audio/webm;codecs=opus'
-      : MediaRecorder.isTypeSupported('audio/webm')
-      ? 'audio/webm'
-      : MediaRecorder.isTypeSupported('audio/mp4')
-      ? 'audio/mp4'
-      : '';
-
-    mediaRec = mimeType ? new MediaRecorder(stream,{mimeType}) : new MediaRecorder(stream);
-
-    mediaRec.ondataavailable = e=>{ if(e.data && e.data.size>0) recChunks.push(e.data) };
-
-    mediaRec.onstop = async ()=>{
-      stream.getTracks().forEach(t=>t.stop());
-      const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
-      const blob = new Blob(recChunks, {type: mimeType||'audio/webm'});
-      attachedFile = new File([blob], `voice_${Date.now()}.${ext}`, {type: mimeType||'audio/webm'});
-      attachedType = 'voice';
-      G('imgPreviewThumb').src='';
-      G('attachLabel').textContent=`🎙 تسجيل ${recSeconds} ثانية - اضغط إرسال`;
-      G('imgPreviewBar').classList.add('show');
-      G('btnRecord').style.color='var(--t3)';
-      G('btnRecord').style.background='none';
-      mediaRec=null;
-    };
-
-    mediaRec.start(100);
-
-    // visual feedback
-    G('btnRecord').style.color='var(--red)';
-    G('btnRecord').style.background='rgba(232,69,60,.15)';
-    G('attachLabel').textContent='🔴 جارٍ التسجيل... (0 ث) - اضغط مجدداً للإيقاف';
-    G('imgPreviewBar').classList.add('show');
-    G('imgPreviewThumb').src='';
-
-    recTimer = setInterval(()=>{
-      recSeconds++;
-      G('attachLabel').textContent=`🔴 جارٍ التسجيل... (${recSeconds} ث) - اضغط مجدداً للإيقاف`;
-      if(recSeconds >= 120){ // max 2 min
-        mediaRec.stop();
-        clearInterval(recTimer);
-      }
-    }, 1000);
-
-  }catch(err){
-    if(err.name==='NotAllowedError') toast('يجب السماح للموقع باستخدام الميكروفون');
-    else toast('خطأ في الميكروفون: '+err.message);
-  }
+// VOICE MESSAGE - upload audio file
+G('btnRecord').addEventListener('click',()=>{if(!activeCh||!activeSrv)return toast('اختر قناة أولاً');G('voiceFI').click()});
+G('voiceFI').addEventListener('change',async e=>{
+  const f=e.target.files[0];if(!f)return;
+  attachedFile=f;attachedType='voice';
+  G('imgPreviewThumb').src='';
+  G('attachLabel').textContent='🎵 ملف صوتي جاهز: '+f.name.substring(0,20);
+  G('imgPreviewBar').classList.add('show');
+  e.target.value='';
 });
 
 // SEND
